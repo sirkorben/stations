@@ -16,11 +16,16 @@ public interface MobileStationRepository
         @Transactional
         @Modifying(clearAutomatically = true)
         @Query(value = "UPDATE MobileStation ms SET ms.lastKnownX = ?2, ms.lastKnownY = ?3, ms.errorRadius = 0 WHERE ms.mobileStationId = ?1")
-        void saveLastKnownPoint(UUID uuid, double x, double y);
+        void saveLastKnownPointKnownByThreeBaseStations(UUID uuid, double x, double y);
 
         @Transactional
         @Modifying(clearAutomatically = true)
         @Query(value = "UPDATE MobileStation ms SET ms.lastKnownX = :lastKnownX, ms.lastKnownY = :lastKnownY, ms.errorRadius = :errorRadius WHERE ms.mobileStationId = :mobileStationId")
-        void saveLastKnownPointKnownByTwoBS(@Param("mobileStationId") UUID mobileStationId, @Param("lastKnownX") double x, @Param("lastKnownY") double y, @Param("errorRadius") double errorRadius);
+        void saveLastKnownPointKnownByTwoBaseStations(@Param("mobileStationId") UUID mobileStationId, @Param("lastKnownX") double x, @Param("lastKnownY") double y, @Param("errorRadius") double errorRadius);
+
+        @Transactional
+        @Modifying(clearAutomatically = true)
+        @Query(value = "UPDATE MobileStation ms SET ms.lastKnownX = :lastKnownX, ms.lastKnownY = :lastKnownY, ms.errorRadius = :errorRadius WHERE ms.mobileStationId = :mobileStationId")
+        void saveLastKnownPointKnownByOneBaseStation(@Param("mobileStationId") UUID mobileStationId, @Param("lastKnownX") double x, @Param("lastKnownY") double y, @Param("errorRadius") double errorRadius);
 
 }

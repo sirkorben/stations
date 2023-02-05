@@ -1,7 +1,7 @@
 package com.example.vqshki.service;
 
 import com.example.vqshki.models.BaseStation;
-import com.example.vqshki.models.BaseStationReport;
+import com.example.vqshki.utils.BaseStationRequestMessage;
 import com.example.vqshki.models.MobileStation;
 import com.example.vqshki.models.Report;
 import com.example.vqshki.repository.BaseStationRepository;
@@ -29,29 +29,37 @@ public class BaseStationService {
         this.mobileStationRepository = mobileStationRepository;
     }
 
-    public void handleReport(BaseStationReport report) {
+    public void handleReport(BaseStationRequestMessage report) {
         UUID bsId = report.getBaseStationId();
         report.getReports().forEach(rep -> {
             rep.setBaseStationId(bsId);
             reportRepository.save(rep);
-            collectReportsAboutMsPositionInTimeWindow(rep);
+            collectReportsAboutMobileStationPositionInTimeWindow(rep);
         });
     }
 
-    private void collectReportsAboutMsPositionInTimeWindow(Report report) {
+    private void collectReportsAboutMobileStationPositionInTimeWindow(Report report) {
         List<Report> coincidenceReportList = new ArrayList<>();
         List<UUID> reportList = reportRepository.getReportsInTimeWindow(report.getMobileStationId(), timeWindow(report.getTimeDetected()));
         reportList.forEach(bsId -> coincidenceReportList.add(reportRepository.getLatestReportByBsId(bsId)));
-
+        if (coincidenceReportList.size() == 1) {
+            detectedByOneBaseStation(coincidenceReportList, coincidenceReportList.get(0).getMobileStationId());
+        }
         if (coincidenceReportList.size() == 2) {
-            coincidenceByTwoBsReports(coincidenceReportList);
+            detectedByTwoBaseStations(coincidenceReportList);
         }
         if (coincidenceReportList.size() == 3) {
-            coincidenceByThreeBsReports(coincidenceReportList);
+            detectedByThreeBaseStations(coincidenceReportList);
         }
     }
 
-    private void coincidenceByTwoBsReports(List<Report> reports) {
+    private void detectedByOneBaseStation(List<Report> reports, UUID mobileStationId) {
+        double detectedWithRadius = reports.get(0).getDistance();
+        Optional<BaseStation> baseStation = baseStationRepository.findById(reports.get(0).getBaseStationId());
+        baseStation.ifPresent(station -> mobileStationRepository.saveLastKnownPointKnownByOneBaseStation(mobileStationId, station.getCoordinateX(), station.getCoordinateY(), detectedWithRadius));
+    }
+
+    private void detectedByTwoBaseStations(List<Report> reports) {
         UUID msId = reports.get(0).getMobileStationId();
 
         Optional<BaseStation> bsOne = baseStationRepository.findById(reports.get(0).getBaseStationId());
@@ -65,11 +73,11 @@ public class BaseStationService {
                     bsOne.get().getCoordinateX(), bsOne.get().getCoordinateY(), bsOneDetectedInRadius, bsTwo.get().getCoordinateX(), bsTwo.get().getCoordinateY(), bsTwoDetectedInRadius);
             MobileStation ms = LocationDetermination.commonPointWithErrorRadius(coincidencePoints);
             ms.setMobileStationId(msId);
-            mobileStationRepository.saveLastKnownPointKnownByTwoBS(ms.getMobileStationId(), ms.getLastKnownX(), ms.getLastKnownY(), ms.getErrorRadius());
+            mobileStationRepository.saveLastKnownPointKnownByTwoBaseStations(ms.getMobileStationId(), ms.getLastKnownX(), ms.getLastKnownY(), ms.getErrorRadius());
         }
     }
 
-    private void coincidenceByThreeBsReports(List<Report> reports) {
+    private void detectedByThreeBaseStations(List<Report> reports) {
         UUID msId = reports.get(0).getMobileStationId();
 
         Optional<BaseStation> bsOne = baseStationRepository.findById(reports.get(0).getBaseStationId());
@@ -89,12 +97,8 @@ public class BaseStationService {
             LocationDetermination.AnswerPoints finalAnswer = LocationDetermination.commonPoint(coincidencePoints, coincidencePoints2);
 
             // TODO: think about sending one common structure same with coincidenceByTwoBsReports();
-            saveNewLocationOfMs(msId, finalAnswer.finalX, finalAnswer.finalY);
+            mobileStationRepository.saveLastKnownPointKnownByThreeBaseStations(msId, finalAnswer.finalX, finalAnswer.finalY);
         }
-    }
-
-    private void saveNewLocationOfMs(UUID msId, double lastKnownX, double lastKnownY) {
-        mobileStationRepository.saveLastKnownPoint(msId, lastKnownX, lastKnownY);
     }
 
     private Timestamp timeWindow(Timestamp time) {

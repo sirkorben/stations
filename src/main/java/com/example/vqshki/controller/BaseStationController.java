@@ -1,7 +1,7 @@
 package com.example.vqshki.controller;
 
 import com.example.vqshki.models.BaseStation;
-import com.example.vqshki.models.BaseStationReport;
+import com.example.vqshki.utils.BaseStationRequestMessage;
 import com.example.vqshki.service.BaseStationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +19,7 @@ public class BaseStationController {
     }
 
     @PostMapping
-    public void newReport(@RequestBody BaseStationReport report) {
+    public void newReport(@RequestBody BaseStationRequestMessage report) {
         System.out.println(report);
         baseStationService.handleReport(report);
     }

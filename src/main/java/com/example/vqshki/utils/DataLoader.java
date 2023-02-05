@@ -15,7 +15,7 @@ public class DataLoader {
 
     //TODO: find the way to keep them same
     UUID BASE_STATION_A_UUID = UUID.fromString("32c6b0cd-2ada-49c1-8715-eca43b673474");
-    UUID BASE_STATION_A1_UUID = UUID.fromString("0631d7f7-693a-4d45-87d4-27334c6b0bf3");
+    UUID BASE_STATION_C_UUID = UUID.fromString("0631d7f7-693a-4d45-87d4-27334c6b0bf3");
     UUID BASE_STATION_B_UUID = UUID.fromString("69ac855e-de8d-45db-9423-b2c835908daa");
     UUID MOBILE_STATION_Z_UUID = UUID.fromString("343b24bf-73e5-4e30-a437-9c83de708f2a");
 
@@ -38,10 +38,10 @@ public class DataLoader {
                         6
                 ),
                 new BaseStation(
-                        BASE_STATION_A1_UUID,
+                        BASE_STATION_C_UUID,
                         18.83,
                         7.44,
-                        "stationA1",
+                        "stationC",
                         6
                 ),
                 new BaseStation(
