@@ -18,7 +18,6 @@ public class BaseStationController {
         this.baseStationService = baseStationService;
     }
 
-
     @PostMapping
     public void newReport(@RequestBody BaseStationReport report) {
         System.out.println(report);

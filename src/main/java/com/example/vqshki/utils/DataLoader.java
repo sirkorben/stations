@@ -32,23 +32,23 @@ public class DataLoader {
         baseStationRepository.saveAll(List.of(
                 new BaseStation(
                         BASE_STATION_A_UUID,
+                        11,
+                        11,
                         "stationA",
-                        11,
-                        11,
                         6
                 ),
                 new BaseStation(
                         BASE_STATION_A1_UUID,
-                        "stationA1",
                         18.83,
                         7.44,
+                        "stationA1",
                         6
                 ),
                 new BaseStation(
                         BASE_STATION_B_UUID,
-                        "stationB",
                         18,
                         16,
+                        "stationB",
                         6
                 )
         ));

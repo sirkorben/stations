@@ -6,11 +6,17 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
 @Entity
 @Table
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class BaseStation {
     @Id
     @SequenceGenerator(
@@ -28,73 +34,4 @@ public class BaseStation {
     private String name;
     private double detectionRadius;
 
-    public BaseStation() {
-    }
-
-    public BaseStation(UUID baseStationId, String name, double coordinateX, double coordinateY, double detectionRadius) {
-        this.baseStationId = baseStationId;
-        this.name = name;
-        this.coordinateX = coordinateX;
-        this.coordinateY = coordinateY;
-        this.detectionRadius = detectionRadius;
-    }
-
-    public BaseStation(String name, double coordinateX, double coordinateY, double detectionRadius) {
-        this.name = name;
-        this.coordinateX = coordinateX;
-        this.coordinateY = coordinateY;
-        this.detectionRadius = detectionRadius;
-    }
-
-
-    public UUID getBaseStationId() {
-        return baseStationId;
-    }
-
-    public void setBaseStationId(UUID uuid) {
-        this.baseStationId = uuid;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public double getCoordinateX() {
-        return coordinateX;
-    }
-
-    public void setCoordinateX(double x) {
-        this.coordinateX = x;
-    }
-
-    public double getCoordinateY() {
-        return coordinateY;
-    }
-
-    public void setCoordinateY(double y) {
-        this.coordinateY = y;
-    }
-
-    public double getDetectionRadius() {
-        return detectionRadius;
-    }
-
-    public void setDetectionRadius(double detectionRadius) {
-        this.detectionRadius = detectionRadius;
-    }
-
-    @Override
-    public String toString() {
-        return "BaseStation{" +
-                "uuid=" + baseStationId +
-                ", x=" + coordinateX +
-                ", y=" + coordinateY +
-                ", name='" + name + '\'' +
-                ", detectionRadius=" + detectionRadius +
-                '}';
-    }
 }
