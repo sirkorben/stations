@@ -1,1 +1,1 @@
-![alt text](https://github.com/sirkorben/stations/blob/main/stations.png?raw=true)
+![alt text](https://github.com/sirkorben/stations/blob/main/schema.png?raw=true)
