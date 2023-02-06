@@ -22,8 +22,4 @@ public class MobileStationService {
         return mobileStationRepository.findById(uuid);
     }
 
-    //TODO: delete later when it is not needed anymore
-    public List<MobileStation> findAllMobileStations(){
-        return mobileStationRepository.findAll();
-    }
 }

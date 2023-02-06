@@ -21,12 +21,6 @@ public class BaseStationController {
     @PostMapping
     public void newReport(@RequestBody BaseStationRequestMessage report) {
         System.out.println(report);
-        baseStationService.handleReport(report);
-    }
-
-    // TODO: for knowing available BSs Ids. should be deleted at the end
-    @GetMapping
-    public List<BaseStation> getAllBaseStations() {
-        return baseStationService.findAllBaseStations();
+        baseStationService.saveReports(report);
     }
 }

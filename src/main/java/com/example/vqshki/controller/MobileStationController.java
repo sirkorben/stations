@@ -30,9 +30,4 @@ public class MobileStationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // TODO: for knowing available MSs. should be deleted at the end
-    @GetMapping
-    public List<MobileStation> getAllMobileStations() {
-        return mobileStationService.findAllMobileStations();
-    }
 }

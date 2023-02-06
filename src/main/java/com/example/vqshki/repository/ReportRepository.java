@@ -3,6 +3,7 @@ package com.example.vqshki.repository;
 import com.example.vqshki.models.Report;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
@@ -16,6 +17,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     @Query(value = "SELECT r FROM Report r WHERE r.baseStationId = ?1 ORDER BY r.timeDetected DESC LIMIT 1")
     Report getLatestReportByBsId(UUID bsId);
+
+    @Query(value = "SELECT DISTINCT r.mobileStationId FROM Report r WHERE r.timeDetected >= :time_now_minus_time_period")
+    List<UUID>getReportedMobileStationIds(@Param("time_now_minus_time_period") Timestamp time_now_minus_time_period);
 
 }
 
