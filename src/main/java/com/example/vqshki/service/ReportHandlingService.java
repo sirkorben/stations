@@ -22,11 +22,16 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class ReportHandlingService implements ApplicationListener<ApplicationReadyEvent> {
 
-    Integer TIME_PERIOD = 3;
-
     private final ReportRepository reportRepository;
     private final BaseStationRepository baseStationRepository;
     private final MobileStationRepository mobileStationRepository;
+    Integer TIME_PERIOD_FOR_THREAD = 10;
+    Integer TIME_FOR_REPORTS_COINCIDENCE = 5;
+    Runnable handleReportsRunnable = new Runnable() {
+        public void run() {
+            handleReports();
+        }
+    };
 
     @Autowired
     public ReportHandlingService(ReportRepository reportRepository,
@@ -36,35 +41,35 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
         this.baseStationRepository = baseStationRepository;
         this.mobileStationRepository = mobileStationRepository;
     }
-    Runnable helloRunnable = new Runnable() {
-        public void run() {
-            handleReports();
-        }
-    };
+
     @Override
     public void onApplicationEvent(final ApplicationReadyEvent event) {
-        System.out.println("SpringBootApplication has been initialized");
-
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(helloRunnable, 0, TIME_PERIOD, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(handleReportsRunnable, 0, TIME_PERIOD_FOR_THREAD, TimeUnit.SECONDS);
     }
 
     private void handleReports() {
-        List<UUID> mobileStationIdslist = reportRepository.getReportedMobileStationIds(timeWindow());
+
+
+        List<UUID> mobileStationIdslist = reportRepository.getLatestReportedMobileStationIds(timeWindow(new Timestamp((new Date()).getTime()), TIME_PERIOD_FOR_THREAD));
 
         if (!mobileStationIdslist.isEmpty()) {
-            List<Report> coincidenceReportList = new ArrayList<>();
             mobileStationIdslist.forEach(mobileStationId -> {
-                List<UUID> reportList = reportRepository.getReportsInTimeWindow(mobileStationId, timeWindow());
-                reportList.forEach(bsId -> coincidenceReportList.add(reportRepository.getLatestReportByBsId(bsId)));
+                Timestamp latestDetectionTime = reportRepository.getLatestTimeDetectedByMobileStationId(mobileStationId);
+                Timestamp latestDetectionTimeMinusGap = timeWindow(latestDetectionTime, TIME_FOR_REPORTS_COINCIDENCE);
+                List<UUID> detectedByBaseStations = reportRepository.getReportsInTimeWindow(mobileStationId, latestDetectionTimeMinusGap);
+                List<Report> coincidenceReportList = new ArrayList<>();
+
+                detectedByBaseStations.forEach(baseStationId ->
+                        coincidenceReportList.add(reportRepository.getLatestReportByBsId(baseStationId, mobileStationId)));
                 if (coincidenceReportList.size() == 1) {
-                    detectedByOneBaseStation(coincidenceReportList, coincidenceReportList.get(0).getMobileStationId());
+                    detectedByOneBaseStation(coincidenceReportList, mobileStationId);
                 }
                 if (coincidenceReportList.size() == 2) {
-                    detectedByTwoBaseStations(coincidenceReportList);
+                    detectedByTwoBaseStations(coincidenceReportList, mobileStationId);
                 }
                 if (coincidenceReportList.size() == 3) {
-                    detectedByThreeBaseStations(coincidenceReportList);
+                    detectedByThreeBaseStations(coincidenceReportList, mobileStationId);
                 }
             });
         }
@@ -73,54 +78,77 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
     private void detectedByOneBaseStation(List<Report> reports, UUID mobileStationId) {
         double detectedWithRadius = reports.get(0).getDistance();
         Optional<BaseStation> baseStation = baseStationRepository.findById(reports.get(0).getBaseStationId());
-        baseStation.ifPresent(station -> mobileStationRepository.saveLastKnownPointKnownByOneBaseStation(mobileStationId, station.getCoordinateX(), station.getCoordinateY(), detectedWithRadius));
+        baseStation.ifPresent(station -> mobileStationRepository.saveLastKnownPointKnownByOneBaseStation(
+                mobileStationId,
+                station.getCoordinateX(),
+                station.getCoordinateY(),
+                detectedWithRadius));
     }
 
-    private void detectedByTwoBaseStations(List<Report> reports) {
-        UUID msId = reports.get(0).getMobileStationId();
+    private void detectedByTwoBaseStations(List<Report> reports, UUID mobileStationId) {
 
-        Optional<BaseStation> bsOne = baseStationRepository.findById(reports.get(0).getBaseStationId());
-        double bsOneDetectedInRadius = reports.get(0).getDistance();
+        Optional<BaseStation> baseStationOne = baseStationRepository.findById(reports.get(0).getBaseStationId());
+        double baseStationOneDetectedInRadius = reports.get(0).getDistance();
 
-        Optional<BaseStation> bsTwo = baseStationRepository.findById(reports.get(1).getBaseStationId());
-        double bsTwoDetectedInRadius = reports.get(1).getDistance();
+        Optional<BaseStation> baseStationTwo = baseStationRepository.findById(reports.get(1).getBaseStationId());
+        double baseStationTwoDetectedInRadius = reports.get(1).getDistance();
 
-        if (bsOne.isPresent() && bsTwo.isPresent()) {
+        if (baseStationOne.isPresent() && baseStationTwo.isPresent()) {
             LocationDetermination.AnswerPoints coincidencePoints = LocationDetermination.getPointsOfIntersection(
-                    bsOne.get().getCoordinateX(), bsOne.get().getCoordinateY(), bsOneDetectedInRadius, bsTwo.get().getCoordinateX(), bsTwo.get().getCoordinateY(), bsTwoDetectedInRadius);
+                    baseStationOne.get().getCoordinateX(),
+                    baseStationOne.get().getCoordinateY(),
+                    baseStationOneDetectedInRadius,
+                    baseStationTwo.get().getCoordinateX(),
+                    baseStationTwo.get().getCoordinateY(),
+                    baseStationTwoDetectedInRadius);
+
             MobileStation ms = LocationDetermination.commonPointWithErrorRadius(coincidencePoints);
-            ms.setMobileStationId(msId);
-            mobileStationRepository.saveLastKnownPointKnownByTwoBaseStations(ms.getMobileStationId(), ms.getLastKnownX(), ms.getLastKnownY(), ms.getErrorRadius());
+            mobileStationRepository.saveLastKnownPointKnownByTwoBaseStations(
+                    mobileStationId,
+                    ms.getLastKnownX(),
+                    ms.getLastKnownY(),
+                    ms.getErrorRadius());
         }
     }
 
-    private void detectedByThreeBaseStations(List<Report> reports) {
-        UUID msId = reports.get(0).getMobileStationId();
+    private void detectedByThreeBaseStations(List<Report> reports, UUID mobileStationId) {
+        Optional<BaseStation> baseStationOne = baseStationRepository.findById(reports.get(0).getBaseStationId());
+        double baseStationOneDetectedInRadius = reports.get(0).getDistance();
 
-        Optional<BaseStation> bsOne = baseStationRepository.findById(reports.get(0).getBaseStationId());
-        double bsOneDetectedInRadius = reports.get(0).getDistance();
+        Optional<BaseStation> baseStationTwo = baseStationRepository.findById(reports.get(1).getBaseStationId());
+        double baseStationTwoDetectedInRadius = reports.get(1).getDistance();
 
-        Optional<BaseStation> bsTwo = baseStationRepository.findById(reports.get(1).getBaseStationId());
-        double bsTwoDetectedInRadius = reports.get(1).getDistance();
+        Optional<BaseStation> baseStationThree = baseStationRepository.findById(reports.get(2).getBaseStationId());
+        double baseStationThreeDetectedInRadius = reports.get(2).getDistance();
 
-        Optional<BaseStation> bsThree = baseStationRepository.findById(reports.get(2).getBaseStationId());
-        double bsThreeDetectedInRadius = reports.get(2).getDistance();
-
-        if (bsOne.isPresent() && bsTwo.isPresent() && bsThree.isPresent()) {
+        if (baseStationOne.isPresent() && baseStationTwo.isPresent() && baseStationThree.isPresent()) {
             LocationDetermination.AnswerPoints coincidencePoints = LocationDetermination.getPointsOfIntersection(
-                    bsOne.get().getCoordinateX(), bsOne.get().getCoordinateY(), bsOneDetectedInRadius, bsTwo.get().getCoordinateX(), bsTwo.get().getCoordinateY(), bsTwoDetectedInRadius);
+                    baseStationOne.get().getCoordinateX(),
+                    baseStationOne.get().getCoordinateY(),
+                    baseStationOneDetectedInRadius,
+                    baseStationTwo.get().getCoordinateX(),
+                    baseStationTwo.get().getCoordinateY(),
+                    baseStationTwoDetectedInRadius);
             LocationDetermination.AnswerPoints coincidencePoints2 = LocationDetermination.getPointsOfIntersection(
-                    bsTwo.get().getCoordinateX(), bsTwo.get().getCoordinateY(), bsTwoDetectedInRadius, bsThree.get().getCoordinateX(), bsThree.get().getCoordinateY(), bsThreeDetectedInRadius);
-            LocationDetermination.AnswerPoints finalAnswer = LocationDetermination.commonPoint(coincidencePoints, coincidencePoints2);
+                    baseStationTwo.get().getCoordinateX(),
+                    baseStationTwo.get().getCoordinateY(),
+                    baseStationTwoDetectedInRadius,
+                    baseStationThree.get().getCoordinateX(),
+                    baseStationThree.get().getCoordinateY(),
+                    baseStationThreeDetectedInRadius);
 
-            // TODO: think about sending one common structure same with coincidenceByTwoBsReports();
-            mobileStationRepository.saveLastKnownPointKnownByThreeBaseStations(msId, finalAnswer.finalX, finalAnswer.finalY);
+            MobileStation mobileStation = LocationDetermination.commonPoint(coincidencePoints, coincidencePoints2);
+            mobileStationRepository.saveLastKnownPointKnownByThreeBaseStations(
+                    mobileStationId,
+                    mobileStation.getLastKnownX(),
+                    mobileStation.getLastKnownY());
         }
     }
 
-    private Timestamp timeWindow() {
+    private Timestamp timeWindow(Timestamp time, Integer gap) {
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.SECOND, -TIME_PERIOD);
+        cal.setTimeInMillis(time.getTime());
+        cal.add(Calendar.SECOND, -gap);
         return new Timestamp(cal.getTime().getTime());
     }
 }

@@ -57,32 +57,29 @@ public class LocationDetermination {
         }
         return points;
     }
-    public static AnswerPoints commonPoint(AnswerPoints points1, AnswerPoints points2) {
-        AnswerPoints finalPoint = new AnswerPoints();
+    public static MobileStation commonPoint(AnswerPoints points1, AnswerPoints points2) {
+        MobileStation mobileStation = new MobileStation();
         if  (Math.ceil(points1.x) != Math.ceil(points2.x) && Math.ceil(points1.x) != Math.ceil(points2.x1)) {
-            System.out.println(Math.ceil(points1.x) + " " + Math.ceil(points2.x) + "\n" + Math.ceil(points1.x) + " " + Math.ceil(points2.x1));
             if (Math.ceil(points1.x1) == Math.ceil(points2.x)) {
-                finalPoint.setFinalX(points1.x1);
-                finalPoint.setFinalY(points1.y1);
+                mobileStation.setLastKnownX(points1.x1);
+                mobileStation.setLastKnownY(points1.y1);
             } else {
-                finalPoint.setFinalX(points2.x1);
-                finalPoint.setFinalY(points2.y1);
+                mobileStation.setLastKnownX(points2.x1);
+                mobileStation.setLastKnownY(points2.y1);
             }
         } else {
-            System.out.println("else " + Math.ceil(points1.x) + " " + Math.ceil(points2.x) + "\n" + Math.ceil(points1.x) + " " + Math.ceil(points2.x1));
-            finalPoint.setFinalX(points1.x);
-            finalPoint.setFinalY(points1.y);
+            mobileStation.setLastKnownX(points1.x);
+            mobileStation.setLastKnownY(points1.y);
         }
-        return finalPoint;
+        mobileStation.setErrorRadius(0);
+
+        return mobileStation;
     }
     public static MobileStation commonPointWithErrorRadius(AnswerPoints points) {
         MobileStation mobileStation = new MobileStation();
-        // Формулы вычисления координат центра отрезка между двумя точками x0 = (x1 + x2) / 2 y0 = (y1 + y2) / 2
-        // формула растояние между точками пересечения окружностей |AB|² = (y2 - y1)² + (x2 - x1)²
         mobileStation.setLastKnownX((points.x + points.x1) / 2);
         mobileStation.setLastKnownY((points.y + points.y1) / 2);
         double d = sqrt(pow((points.y1 - points.y), 2) + pow((points.x1 - points.x), 2));
-        System.out.println(d + " - means, error radius =  " + d / 2);
         mobileStation.setErrorRadius(d / 2);
         return mobileStation;
     }

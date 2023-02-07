@@ -20,7 +20,6 @@ public class BaseStationController {
 
     @PostMapping
     public void newReport(@RequestBody BaseStationRequestMessage report) {
-        System.out.println(report);
         baseStationService.saveReports(report);
     }
 }

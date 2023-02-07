@@ -15,11 +15,14 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     @Query(value = "SELECT DISTINCT r.baseStationId FROM Report r WHERE r.mobileStationId = ?1 AND r.timeDetected >= ?2")
     List<UUID> getReportsInTimeWindow(UUID msId, Timestamp timeWindow);
 
-    @Query(value = "SELECT r FROM Report r WHERE r.baseStationId = ?1 ORDER BY r.timeDetected DESC LIMIT 1")
-    Report getLatestReportByBsId(UUID bsId);
+    @Query(value = "SELECT r FROM Report r WHERE r.baseStationId = ?1 AND r.mobileStationId = ?2 ORDER BY r.timeDetected DESC LIMIT 1")
+    Report getLatestReportByBsId(UUID bsId, UUID msId);
 
     @Query(value = "SELECT DISTINCT r.mobileStationId FROM Report r WHERE r.timeDetected >= :time_now_minus_time_period")
-    List<UUID>getReportedMobileStationIds(@Param("time_now_minus_time_period") Timestamp time_now_minus_time_period);
+    List<UUID> getLatestReportedMobileStationIds(@Param("time_now_minus_time_period") Timestamp time_now_minus_time_period);
+
+    @Query(value = "SELECT r.timeDetected FROM Report r WHERE r.mobileStationId = ?1 ORDER BY r.timeDetected DESC LIMIT 1")
+    Timestamp getLatestTimeDetectedByMobileStationId(UUID mobileStationId);
 
 }
 
