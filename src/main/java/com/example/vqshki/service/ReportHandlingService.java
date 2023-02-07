@@ -14,6 +14,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -63,6 +64,7 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
 
                 detectedByBaseStations.forEach(baseStationId ->
                         coincidenceReportList.add(reportRepository.getLatestReportByBsId(baseStationId, mobileStationId)));
+
                 if (coincidenceReportList.size() == 1) {
                     detectedByOneBaseStation(coincidenceReportList, mobileStationId);
                 }
@@ -79,17 +81,16 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
     private void detectedByOneBaseStation(List<Report> reports, UUID mobileStationId) {
         double detectedWithRadius = reports.get(0).getDistance();
         Optional<BaseStation> baseStation = baseStationRepository.findById(reports.get(0).getBaseStationId());
-        baseStation.ifPresent(baseStation1 -> {
-
-            MobileStation mobileStation = new MobileStation();
-            mobileStation.setMobileStationId(mobileStationId);
-            mobileStation.setLastKnownX(baseStation1.getCoordinateX());
-            mobileStation.setLastKnownY(baseStation1.getCoordinateY());
-            mobileStation.setErrorRadius(detectedWithRadius);
-            mobileStation.setErrorCode(5001);
-            mobileStation.setErrorMsg("Impossible to accurately locate mobile station by 1 Base Station");
-            mobileStationRepository.save(mobileStation);
-        });
+        baseStation.ifPresent(baseStation1 -> mobileStationRepository.save(new MobileStation(
+                    mobileStationId,
+                    baseStation1.getCoordinateX(),
+                    baseStation1.getCoordinateY(),
+                    detectedWithRadius,
+                    5001,
+                    "Impossible to accurately locate mobile station by 1 Base Station",
+                    Timestamp.from(Instant.now())
+            ))
+        );
     }
 
     private void detectedByTwoBaseStations(List<Report> reports, UUID mobileStationId) {
@@ -109,9 +110,12 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
                     baseStationTwo.get().getCoordinateY(),
                     baseStationTwoDetectedInRadius);
 
-            MobileStation ms = LocationDetermination.commonPointWithErrorRadius(coincidencePoints);
-            ms.setMobileStationId(mobileStationId);
-            mobileStationRepository.save(ms);
+            MobileStation mobileStation = LocationDetermination.commonPointWithErrorRadius(coincidencePoints);
+            mobileStation.setMobileStationId(mobileStationId);
+            mobileStation.setErrorCode(5002);
+            mobileStation.setErrorMsg("Mobile Station Detected by two Base Stations with an error");
+            mobileStation.setTimestamp(Timestamp.from(Instant.now()));
+            mobileStationRepository.save(mobileStation);
         }
     }
 
@@ -142,8 +146,8 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
                     baseStationThreeDetectedInRadius);
 
             MobileStation mobileStation = LocationDetermination.commonPoint(coincidencePoints, coincidencePoints2);
-
             mobileStation.setMobileStationId(mobileStationId);
+            mobileStation.setTimestamp(Timestamp.from(Instant.now()));
             mobileStationRepository.save(mobileStation);
 
         }
