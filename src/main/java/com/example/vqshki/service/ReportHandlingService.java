@@ -79,11 +79,17 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
     private void detectedByOneBaseStation(List<Report> reports, UUID mobileStationId) {
         double detectedWithRadius = reports.get(0).getDistance();
         Optional<BaseStation> baseStation = baseStationRepository.findById(reports.get(0).getBaseStationId());
-        baseStation.ifPresent(station -> mobileStationRepository.saveLastKnownPointKnownByOneBaseStation(
-                mobileStationId,
-                station.getCoordinateX(),
-                station.getCoordinateY(),
-                detectedWithRadius));
+        baseStation.ifPresent(baseStation1 -> {
+
+            MobileStation mobileStation = new MobileStation();
+            mobileStation.setMobileStationId(mobileStationId);
+            mobileStation.setLastKnownX(baseStation1.getCoordinateX());
+            mobileStation.setLastKnownY(baseStation1.getCoordinateY());
+            mobileStation.setErrorRadius(detectedWithRadius);
+            mobileStation.setErrorCode(5001);
+            mobileStation.setErrorMsg("Impossible to accurately locate mobile station by 1 Base Station");
+            mobileStationRepository.save(mobileStation);
+        });
     }
 
     private void detectedByTwoBaseStations(List<Report> reports, UUID mobileStationId) {
@@ -104,11 +110,8 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
                     baseStationTwoDetectedInRadius);
 
             MobileStation ms = LocationDetermination.commonPointWithErrorRadius(coincidencePoints);
-            mobileStationRepository.saveLastKnownPointKnownByTwoBaseStations(
-                    mobileStationId,
-                    ms.getLastKnownX(),
-                    ms.getLastKnownY(),
-                    ms.getErrorRadius());
+            ms.setMobileStationId(mobileStationId);
+            mobileStationRepository.save(ms);
         }
     }
 
@@ -139,10 +142,10 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
                     baseStationThreeDetectedInRadius);
 
             MobileStation mobileStation = LocationDetermination.commonPoint(coincidencePoints, coincidencePoints2);
-            mobileStationRepository.saveLastKnownPointKnownByThreeBaseStations(
-                    mobileStationId,
-                    mobileStation.getLastKnownX(),
-                    mobileStation.getLastKnownY());
+
+            mobileStation.setMobileStationId(mobileStationId);
+            mobileStationRepository.save(mobileStation);
+
         }
     }
 

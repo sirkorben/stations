@@ -1,5 +1,6 @@
 package com.example.vqshki.models;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,6 +13,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MobileStation {
     @Id
     @SequenceGenerator(
@@ -24,8 +26,10 @@ public class MobileStation {
             generator = "UUID"
     )
     private UUID mobileStationId;
-    private double lastKnownX;
-    private double lastKnownY;
-    private double errorRadius = 0;
+    private Double lastKnownX;
+    private Double lastKnownY;
+    private Double errorRadius = null;
+    private Integer errorCode = null;
+    private String errorMsg;
 
 }
