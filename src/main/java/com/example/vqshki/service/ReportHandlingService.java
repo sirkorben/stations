@@ -25,8 +25,10 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
     private final ReportRepository reportRepository;
     private final BaseStationRepository baseStationRepository;
     private final MobileStationRepository mobileStationRepository;
+
     Integer TIME_PERIOD_FOR_THREAD = 10;
     Integer TIME_FOR_REPORTS_COINCIDENCE = 5;
+
     Runnable handleReportsRunnable = new Runnable() {
         public void run() {
             handleReports();
@@ -49,7 +51,6 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
     }
 
     private void handleReports() {
-
 
         List<UUID> mobileStationIdslist = reportRepository.getLatestReportedMobileStationIds(timeWindow(new Timestamp((new Date()).getTime()), TIME_PERIOD_FOR_THREAD));
 
