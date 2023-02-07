@@ -71,7 +71,6 @@ public class LocationDetermination {
             mobileStation.setLastKnownX(points1.x);
             mobileStation.setLastKnownY(points1.y);
         }
-        mobileStation.setErrorRadius(0);
 
         return mobileStation;
     }
@@ -80,7 +79,9 @@ public class LocationDetermination {
         mobileStation.setLastKnownX((points.x + points.x1) / 2);
         mobileStation.setLastKnownY((points.y + points.y1) / 2);
         double d = sqrt(pow((points.y1 - points.y), 2) + pow((points.x1 - points.x), 2));
+
         mobileStation.setErrorRadius(d / 2);
+
         return mobileStation;
     }
 }

@@ -19,7 +19,7 @@ public class MobileStationService {
     }
 
     public Optional<MobileStation> getMobileStationInfo(UUID uuid) {
-        return mobileStationRepository.findById(uuid);
+        return mobileStationRepository.findMobileStationByMobileStationId(uuid);
     }
 
 }
