@@ -29,9 +29,8 @@ public class BaseStation {
             generator = "UUID"
     )
     private UUID baseStationId;
-    private double coordinateX;
-    private double coordinateY;
+    private Double coordinateX;
+    private Double coordinateY;
     private String name;
-    private double detectionRadius;
-
+    private Double detectionRadius;
 }

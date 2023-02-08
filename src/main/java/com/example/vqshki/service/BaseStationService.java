@@ -1,18 +1,14 @@
 package com.example.vqshki.service;
 
-import com.example.vqshki.models.BaseStation;
-import com.example.vqshki.utils.BaseStationRequestMessage;
-import com.example.vqshki.models.MobileStation;
 import com.example.vqshki.models.Report;
-import com.example.vqshki.repository.BaseStationRepository;
-import com.example.vqshki.repository.MobileStationRepository;
 import com.example.vqshki.repository.ReportRepository;
-import com.example.vqshki.utils.LocationDetermination;
+import com.example.vqshki.utils.BaseStationRequestMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class BaseStationService {
@@ -31,8 +27,5 @@ public class BaseStationService {
             reports.add(rep);
         });
         reportRepository.saveAll(reports);
-
     }
-
 }
-

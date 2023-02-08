@@ -34,5 +34,4 @@ public class Report {
     private double distance;
     @JsonProperty("timestamp")
     private Timestamp timeDetected;
-
 }

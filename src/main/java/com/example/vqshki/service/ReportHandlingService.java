@@ -7,7 +7,6 @@ import com.example.vqshki.models.Report;
 import com.example.vqshki.repository.BaseStationRepository;
 import com.example.vqshki.repository.MobileStationRepository;
 import com.example.vqshki.repository.ReportRepository;
-import com.example.vqshki.utils.LocationDetermination;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
@@ -20,6 +19,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static com.example.vqshki.utils.ErrorCode.DETECTED_BY_TWO_BASE_STATIONS_WITH_ERROR;
+import static com.example.vqshki.utils.ErrorCode.IMPOSSIBLE_TO_LOCATE_BY_ONE_BASE_STATION;
+import static com.example.vqshki.utils.LocationDetermination.*;
+
 @Component
 public class ReportHandlingService implements ApplicationListener<ApplicationReadyEvent> {
 
@@ -27,14 +30,10 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
     private final BaseStationRepository baseStationRepository;
     private final MobileStationRepository mobileStationRepository;
 
-    Integer TIME_PERIOD_FOR_THREAD = 10;
-    Integer TIME_FOR_REPORTS_COINCIDENCE = 5;
+    Integer SCHEDULED_EXECUTOR_TIME_PERIOD = 10;
+    Integer TIME_GAP_FROM_LATEST_REPORT_TIME = 5;
 
-    Runnable handleReportsRunnable = new Runnable() {
-        public void run() {
-            handleReports();
-        }
-    };
+    Runnable handleReportsRunnable = this::handleReports;
 
     @Autowired
     public ReportHandlingService(ReportRepository reportRepository,
@@ -45,20 +44,27 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
         this.mobileStationRepository = mobileStationRepository;
     }
 
+    private static Timestamp getTimeWindow(Timestamp time, Integer gap) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(time.getTime());
+        cal.add(Calendar.SECOND, -gap);
+        return new Timestamp(cal.getTime().getTime());
+    }
+
     @Override
     public void onApplicationEvent(final ApplicationReadyEvent event) {
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(handleReportsRunnable, 0, TIME_PERIOD_FOR_THREAD, TimeUnit.SECONDS);
+        executor.scheduleAtFixedRate(handleReportsRunnable, 0, SCHEDULED_EXECUTOR_TIME_PERIOD, TimeUnit.SECONDS);
     }
 
     private void handleReports() {
 
-        List<UUID> mobileStationIdslist = reportRepository.getLatestReportedMobileStationIds(timeWindow(new Timestamp((new Date()).getTime()), TIME_PERIOD_FOR_THREAD));
+        List<UUID> mobileStationIdslist = reportRepository.getLatestReportedMobileStationIds(getTimeWindow(new Timestamp((new Date()).getTime()), SCHEDULED_EXECUTOR_TIME_PERIOD));
 
         if (!mobileStationIdslist.isEmpty()) {
             mobileStationIdslist.forEach(mobileStationId -> {
                 Timestamp latestDetectionTime = reportRepository.getLatestTimeDetectedByMobileStationId(mobileStationId);
-                Timestamp latestDetectionTimeMinusGap = timeWindow(latestDetectionTime, TIME_FOR_REPORTS_COINCIDENCE);
+                Timestamp latestDetectionTimeMinusGap = getTimeWindow(latestDetectionTime, TIME_GAP_FROM_LATEST_REPORT_TIME);
                 List<UUID> detectedByBaseStations = reportRepository.getReportsInTimeWindow(mobileStationId, latestDetectionTimeMinusGap);
                 List<Report> coincidenceReportList = new ArrayList<>();
 
@@ -79,30 +85,32 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
     }
 
     private void detectedByOneBaseStation(List<Report> reports, UUID mobileStationId) {
-        double detectedWithRadius = reports.get(0).getDistance();
-        Optional<BaseStation> baseStation = baseStationRepository.findById(reports.get(0).getBaseStationId());
-        baseStation.ifPresent(baseStation1 -> mobileStationRepository.save(new MobileStation(
-                    mobileStationId,
-                    baseStation1.getCoordinateX(),
-                    baseStation1.getCoordinateY(),
-                    detectedWithRadius,
-                    5001,
-                    "Impossible to accurately locate mobile station by 1 Base Station",
-                    Timestamp.from(Instant.now())
-            ))
-        );
+        Report report = reports.get(0);
+
+        Optional<BaseStation> baseStation = getBaseStationById(report);
+        double detectedWithRadius = report.getDistance();
+
+        baseStation.ifPresent(baseStation1 -> mobileStationRepository.save(MobileStation.builder()
+                .mobileStationId(mobileStationId)
+                .lastKnownX(baseStation1.getCoordinateX())
+                .lastKnownY(baseStation1.getCoordinateY())
+                .errorRadius(detectedWithRadius)
+                .errorCode(IMPOSSIBLE_TO_LOCATE_BY_ONE_BASE_STATION.getErrorCode())
+                .errorMsg(IMPOSSIBLE_TO_LOCATE_BY_ONE_BASE_STATION.getErrorMessage())
+                .timestamp(Timestamp.from(Instant.now()))
+                .build()));
     }
 
     private void detectedByTwoBaseStations(List<Report> reports, UUID mobileStationId) {
 
-        Optional<BaseStation> baseStationOne = baseStationRepository.findById(reports.get(0).getBaseStationId());
+        Optional<BaseStation> baseStationOne = getBaseStationById(reports.get(0));
         double baseStationOneDetectedInRadius = reports.get(0).getDistance();
 
-        Optional<BaseStation> baseStationTwo = baseStationRepository.findById(reports.get(1).getBaseStationId());
+        Optional<BaseStation> baseStationTwo = getBaseStationById(reports.get(1));
         double baseStationTwoDetectedInRadius = reports.get(1).getDistance();
 
         if (baseStationOne.isPresent() && baseStationTwo.isPresent()) {
-            LocationDetermination.AnswerPoints coincidencePoints = LocationDetermination.getPointsOfIntersection(
+            CoincidentPoints coincidencePoints = getPointsOfIntersection(
                     baseStationOne.get().getCoordinateX(),
                     baseStationOne.get().getCoordinateY(),
                     baseStationOneDetectedInRadius,
@@ -110,34 +118,37 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
                     baseStationTwo.get().getCoordinateY(),
                     baseStationTwoDetectedInRadius);
 
-            MobileStation mobileStation = LocationDetermination.commonPointWithErrorRadius(coincidencePoints);
-            mobileStation.setMobileStationId(mobileStationId);
-            mobileStation.setErrorCode(5002);
-            mobileStation.setErrorMsg("Mobile Station Detected by two Base Stations with an error");
-            mobileStation.setTimestamp(Timestamp.from(Instant.now()));
-            mobileStationRepository.save(mobileStation);
+            FinalCoordinates finalCoordinates = calculateFinalCoordinatesWithErrRadius(coincidencePoints);
+            mobileStationRepository.save(MobileStation.builder().
+                    mobileStationId(mobileStationId)
+                    .lastKnownX(finalCoordinates.getCoordinateX())
+                    .lastKnownY(finalCoordinates.getCoordinateY())
+                    .errorRadius(finalCoordinates.getErrorRadius())
+                    .errorMsg(DETECTED_BY_TWO_BASE_STATIONS_WITH_ERROR.getErrorMessage())
+                    .errorCode(DETECTED_BY_TWO_BASE_STATIONS_WITH_ERROR.getErrorCode())
+                    .timestamp(Timestamp.from(Instant.now())).build());
         }
     }
 
     private void detectedByThreeBaseStations(List<Report> reports, UUID mobileStationId) {
-        Optional<BaseStation> baseStationOne = baseStationRepository.findById(reports.get(0).getBaseStationId());
+        Optional<BaseStation> baseStationOne = getBaseStationById(reports.get(0));
         double baseStationOneDetectedInRadius = reports.get(0).getDistance();
 
-        Optional<BaseStation> baseStationTwo = baseStationRepository.findById(reports.get(1).getBaseStationId());
+        Optional<BaseStation> baseStationTwo = getBaseStationById(reports.get(1));
         double baseStationTwoDetectedInRadius = reports.get(1).getDistance();
 
-        Optional<BaseStation> baseStationThree = baseStationRepository.findById(reports.get(2).getBaseStationId());
+        Optional<BaseStation> baseStationThree = getBaseStationById(reports.get(2));
         double baseStationThreeDetectedInRadius = reports.get(2).getDistance();
 
         if (baseStationOne.isPresent() && baseStationTwo.isPresent() && baseStationThree.isPresent()) {
-            LocationDetermination.AnswerPoints coincidencePoints = LocationDetermination.getPointsOfIntersection(
+            CoincidentPoints coincidencePoints = getPointsOfIntersection(
                     baseStationOne.get().getCoordinateX(),
                     baseStationOne.get().getCoordinateY(),
                     baseStationOneDetectedInRadius,
                     baseStationTwo.get().getCoordinateX(),
                     baseStationTwo.get().getCoordinateY(),
                     baseStationTwoDetectedInRadius);
-            LocationDetermination.AnswerPoints coincidencePoints2 = LocationDetermination.getPointsOfIntersection(
+            CoincidentPoints coincidencePoints2 = getPointsOfIntersection(
                     baseStationTwo.get().getCoordinateX(),
                     baseStationTwo.get().getCoordinateY(),
                     baseStationTwoDetectedInRadius,
@@ -145,18 +156,16 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
                     baseStationThree.get().getCoordinateY(),
                     baseStationThreeDetectedInRadius);
 
-            MobileStation mobileStation = LocationDetermination.commonPoint(coincidencePoints, coincidencePoints2);
-            mobileStation.setMobileStationId(mobileStationId);
-            mobileStation.setTimestamp(Timestamp.from(Instant.now()));
-            mobileStationRepository.save(mobileStation);
-
+            FinalCoordinates finalCoordinates = calculateFinalCoordinates(coincidencePoints, coincidencePoints2);
+            mobileStationRepository.save(MobileStation.builder()
+                    .mobileStationId(mobileStationId)
+                    .lastKnownX(finalCoordinates.getCoordinateX())
+                    .lastKnownY(finalCoordinates.getCoordinateY())
+                    .timestamp(Timestamp.from(Instant.now())).build());
         }
     }
 
-    private Timestamp timeWindow(Timestamp time, Integer gap) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(time.getTime());
-        cal.add(Calendar.SECOND, -gap);
-        return new Timestamp(cal.getTime().getTime());
+    private Optional<BaseStation> getBaseStationById(Report report) {
+        return baseStationRepository.findById(report.getBaseStationId());
     }
 }

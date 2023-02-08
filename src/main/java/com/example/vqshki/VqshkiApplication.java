@@ -8,5 +8,4 @@ public class VqshkiApplication {
     public static void main(String[] args) {
         SpringApplication.run(VqshkiApplication.class, args);
     }
-
 }

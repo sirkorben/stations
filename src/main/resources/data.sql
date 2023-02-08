@@ -1,8 +1,7 @@
 -- 2d1ebc5b-7d27-4197-9cf0-e84451c5bbb1
 -- 8a7addd4-206a-441e-a415-a1d9500c625c
--- INSERT INTO mobile_station(id, mobile_station_id, last_knownx, last_knowny, timestamp) VALUES (1L, '2D1EBC5B7D2741979CF0E84451C5BBB1', 29, 6, CURRENT_TIMESTAMP);
--- INSERT INTO mobile_station(id, mobile_station_id, last_knownx, last_knowny, timestamp) VALUES (2L, '8A7ADDD4206A441EA415A1D9500C625C', 24.64, 12.81, CURRENT_TIMESTAMP);
-
+INSERT INTO mobile_station(mobile_station_id, last_knownx, last_knowny, timestamp) VALUES ('2D1EBC5B7D2741979CF0E84451C5BBB1', 29, 6, CURRENT_TIMESTAMP);
+INSERT INTO mobile_station(mobile_station_id, last_knownx, last_knowny, timestamp) VALUES ('8A7ADDD4206A441EA415A1D9500C625C', 24.64, 12.81, CURRENT_TIMESTAMP);
 
 -- 04d2f1e4-64b1-4268-a3ec-7a080b474f65
 -- dd4a0e89-fd6f-41a2-804e-5a4a1801ae8e

@@ -5,8 +5,6 @@ import com.example.vqshki.repository.MobileStationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -18,8 +16,7 @@ public class MobileStationService {
         this.mobileStationRepository = mobileStationRepository;
     }
 
-    public Optional<MobileStation> getMobileStationInfo(UUID uuid) {
-        return mobileStationRepository.findMobileStationByMobileStationId(uuid);
+    public MobileStation getMobileStationInfo(UUID uuid) {
+        return mobileStationRepository.findMobileStationById(uuid);
     }
-
 }
