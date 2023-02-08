@@ -59,7 +59,8 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
 
     private void handleReports() {
 
-        List<UUID> mobileStationIdslist = reportRepository.getLatestReportedMobileStationIds(getTimeWindow(new Timestamp((new Date()).getTime()), SCHEDULED_EXECUTOR_TIME_PERIOD));
+        List<UUID> mobileStationIdslist = reportRepository.getLatestReportedMobileStationIds(getTimeWindow(
+                        new Timestamp((new Date()).getTime()), SCHEDULED_EXECUTOR_TIME_PERIOD));
 
         if (!mobileStationIdslist.isEmpty()) {
             mobileStationIdslist.forEach(mobileStationId -> {
@@ -110,7 +111,7 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
         double baseStationTwoDetectedInRadius = reports.get(1).getDistance();
 
         if (baseStationOne.isPresent() && baseStationTwo.isPresent()) {
-            CoincidentPoints coincidencePoints = getPointsOfIntersection(
+            CoincidentPoints coincidencePoints = getPointsOfICirclesIntersection(
                     baseStationOne.get().getCoordinateX(),
                     baseStationOne.get().getCoordinateY(),
                     baseStationOneDetectedInRadius,
@@ -141,14 +142,14 @@ public class ReportHandlingService implements ApplicationListener<ApplicationRea
         double baseStationThreeDetectedInRadius = reports.get(2).getDistance();
 
         if (baseStationOne.isPresent() && baseStationTwo.isPresent() && baseStationThree.isPresent()) {
-            CoincidentPoints coincidencePoints = getPointsOfIntersection(
+            CoincidentPoints coincidencePoints = getPointsOfICirclesIntersection(
                     baseStationOne.get().getCoordinateX(),
                     baseStationOne.get().getCoordinateY(),
                     baseStationOneDetectedInRadius,
                     baseStationTwo.get().getCoordinateX(),
                     baseStationTwo.get().getCoordinateY(),
                     baseStationTwoDetectedInRadius);
-            CoincidentPoints coincidencePoints2 = getPointsOfIntersection(
+            CoincidentPoints coincidencePoints2 = getPointsOfICirclesIntersection(
                     baseStationTwo.get().getCoordinateX(),
                     baseStationTwo.get().getCoordinateY(),
                     baseStationTwoDetectedInRadius,

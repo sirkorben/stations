@@ -4,8 +4,6 @@ import lombok.*;
 
 import static java.lang.Math.*;
 
-
-//TODO: remove comments when don't needed
 public class LocationDetermination {
 
     public static class CoincidentPoints {
@@ -21,28 +19,28 @@ public class LocationDetermination {
         double coordinateX, coordinateY, errorRadius;
     }
 
-    public static CoincidentPoints getPointsOfIntersection(double x10, double y10, double r1, double x20, double y20, double r2) {
+    public static CoincidentPoints getPointsOfICirclesIntersection(double x10, double y10, double radius1, double x20, double y20, double radius2) {
         CoincidentPoints points = new CoincidentPoints();
-        double x0, y0;      // координаты точки пересечения всех линий
-        double d;           // расстояние между центрами окружностей
-        double a;           // расстояние от r1 до точки пересечения всех линий
-        double h;           // расстояние от точки пересеч окружностей до точки пересеч всех линий
+        double x0, y0;      // coordinates of crossing (line from circles intersection points) and distanceBetweenR1andR2
+        double distanceBetweenR1andR2;
+        double a;           // distance between R1 to crossing point
+        double h;           // distance from one of the circles intersection point to crossing point
 
-        d = sqrt(pow(abs(x10 - x20), 2) + pow(abs(y10 - y20), 2));
-        if (!(d > r1 + r2)) {
+        distanceBetweenR1andR2 = sqrt(pow(abs(x10 - x20), 2) + pow(abs(y10 - y20), 2));
+        if (!(distanceBetweenR1andR2 > radius1 + radius2)) {
             // means no intersections at all
-            a = (r1 * r1 - r2 * r2 + d * d) / (2 * d);
-            h = sqrt(pow(r1, 2) - pow(a, 2));
+            a = (radius1 * radius1 - radius2 * radius2 + distanceBetweenR1andR2 * distanceBetweenR1andR2) / (2 * distanceBetweenR1andR2);
+            h = sqrt(pow(radius1, 2) - pow(a, 2));
 
-            x0 = x10 + a * (x20 - x10) / d;
-            y0 = y10 + a * (y20 - y10) / d;
+            x0 = x10 + a * (x20 - x10) / distanceBetweenR1andR2;
+            y0 = y10 + a * (y20 - y10) / distanceBetweenR1andR2;
 
-            points.x = x0 + h * (y20 - y10) / d;
-            points.y = y0 - h * (x20 - x10) / d;
-            if (a != r1) {
+            points.x = x0 + h * (y20 - y10) / distanceBetweenR1andR2;
+            points.y = y0 - h * (x20 - x10) / distanceBetweenR1andR2;
+            if (a != radius1) {
                 // means one point of intersection
-                points.x1 = x0 - h * (y20 - y10) / d;
-                points.y1 = y0 + h * (x20 - x10) / d;
+                points.x1 = x0 - h * (y20 - y10) / distanceBetweenR1andR2;
+                points.y1 = y0 + h * (x20 - x10) / distanceBetweenR1andR2;
             }
         }
         return points;
