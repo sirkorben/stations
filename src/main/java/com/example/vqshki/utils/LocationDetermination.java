@@ -2,23 +2,12 @@ package com.example.vqshki.utils;
 
 import lombok.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import static java.lang.Math.*;
 
 public class LocationDetermination {
-
-    public static class CoincidentPoints {
-        double x, y;
-        double x1, y1;
-    }
-
-    @Getter
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class FinalCoordinates {
-        double coordinateX, coordinateY, errorRadius;
-    }
-
     public static CoincidentPoints getPointsOfICirclesIntersection(double x10, double y10, double radius1, double x20, double y20, double radius2) {
         CoincidentPoints points = new CoincidentPoints();
         double x0, y0;      // coordinates of crossing (line from circles intersection points) and distanceBetweenR1andR2
@@ -35,12 +24,12 @@ public class LocationDetermination {
             x0 = x10 + a * (x20 - x10) / distanceBetweenR1andR2;
             y0 = y10 + a * (y20 - y10) / distanceBetweenR1andR2;
 
-            points.x = x0 + h * (y20 - y10) / distanceBetweenR1andR2;
-            points.y = y0 - h * (x20 - x10) / distanceBetweenR1andR2;
+            points.x = twoSymbolsAfterPoint(x0 + h * (y20 - y10) / distanceBetweenR1andR2);
+            points.y = twoSymbolsAfterPoint(y0 - h * (x20 - x10) / distanceBetweenR1andR2);
             if (a != radius1) {
                 // means one point of intersection
-                points.x1 = x0 - h * (y20 - y10) / distanceBetweenR1andR2;
-                points.y1 = y0 + h * (x20 - x10) / distanceBetweenR1andR2;
+                points.x1 = twoSymbolsAfterPoint(x0 - h * (y20 - y10) / distanceBetweenR1andR2);
+                points.y1 = twoSymbolsAfterPoint(y0 + h * (x20 - x10) / distanceBetweenR1andR2);
             }
         }
         return points;
@@ -67,10 +56,30 @@ public class LocationDetermination {
     }
 
     public static FinalCoordinates calculateFinalCoordinatesWithErrRadius(CoincidentPoints points) {
-        double x = (points.x + points.x1) / 2;
-        double y = (points.y + points.y1) / 2;
-        double errRadius = sqrt(pow((points.y1 - points.y), 2) + pow((points.x1 - points.x), 2)) / 2;
+        double x = twoSymbolsAfterPoint((points.x + points.x1) / 2);
+        double y = twoSymbolsAfterPoint((points.y + points.y1) / 2);
+        double errRadius = twoSymbolsAfterPoint(sqrt(pow((points.y1 - points.y), 2) + pow((points.x1 - points.x), 2)) / 2);
 
         return FinalCoordinates.builder().coordinateX(x).coordinateY(y).errorRadius(errRadius).build();
     }
+
+    public static double twoSymbolsAfterPoint(double value) {
+        return ((new BigDecimal(value)).setScale(2, RoundingMode.HALF_UP)).doubleValue();
+    }
+
+    @Data
+    public static class CoincidentPoints {
+        double x, y;
+        double x1, y1;
+    }
+
+    @Data
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class FinalCoordinates {
+        double coordinateX, coordinateY, errorRadius;
+    }
+
 }
