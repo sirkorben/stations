@@ -19,6 +19,7 @@ import java.util.List;
 
 import static com.example.vqshki.constants.TestConstants.TEST_BASE_STATION_A;
 import static com.example.vqshki.constants.TestConstants.TEST_MOBILE_STATION_Z;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -62,6 +63,7 @@ class VqshkiApplicationTests {
 		mvc.perform(get("/api/v1/location/" + TEST_MOBILE_STATION_Z)
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk())
-				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+				.andExpect(content().string(containsString(TEST_MOBILE_STATION_Z.toString())));
 	}
 }
