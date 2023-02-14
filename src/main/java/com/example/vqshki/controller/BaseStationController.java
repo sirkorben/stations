@@ -17,7 +17,6 @@ import java.net.URI;
 public class BaseStationController {
     private final BaseStationService baseStationService;
 
-    @Autowired
     public BaseStationController(BaseStationService baseStationService) {
         this.baseStationService = baseStationService;
     }

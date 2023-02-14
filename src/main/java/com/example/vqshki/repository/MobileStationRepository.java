@@ -8,8 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.UUID;
 
 @Repository
-public interface MobileStationRepository
-        extends JpaRepository<MobileStation, Long> {
+public interface MobileStationRepository extends JpaRepository<MobileStation, Long> {
 
     @Query(value = "SELECT ms FROM MobileStation ms WHERE ms.mobileStationId = ?1 ORDER BY timestamp DESC LIMIT 1")
     MobileStation findMobileStationById(UUID id);

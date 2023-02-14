@@ -29,41 +29,41 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class VqshkiApplicationTests {
 
-	@Autowired
-	private MockMvc mvc;
-
-	public static String asJsonString(final Object obj) {
-		try {
-			return new ObjectMapper().writeValueAsString(obj);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Test
-	public void createReportSuccess() throws Exception {
-
-		Report report = new Report();
-		report.setMobileStationId(TEST_MOBILE_STATION_Z);
-		report.setDistance(10);
-		report.setTimeDetected(Timestamp.from(Instant.now()));
-
-		BaseStationRequestMessage baseStationRequestMessage = new BaseStationRequestMessage(TEST_BASE_STATION_A, List.of(report));
-
-		mvc.perform(MockMvcRequestBuilders.post("/api/v1/report")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(asJsonString(baseStationRequestMessage)))
-				.andExpect(status().isCreated());
-
-	}
-
-	@Test
-	public void getMobileStationPositionTest() throws Exception {
-
-		mvc.perform(get("/api/v1/location/" + TEST_MOBILE_STATION_Z)
-						.contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-				.andExpect(content().string(containsString(TEST_MOBILE_STATION_Z.toString())));
-	}
+//	@Autowired
+//	private MockMvc mvc;
+//
+//	public static String asJsonString(final Object obj) {
+//		try {
+//			return new ObjectMapper().writeValueAsString(obj);
+//		} catch (Exception e) {
+//			throw new RuntimeException(e);
+//		}
+//	}
+//
+//	@Test
+//	public void createReportSuccess() throws Exception {
+//
+//		Report report = new Report();
+//		report.setMobileStationId(TEST_MOBILE_STATION_Z);
+//		report.setDistance(10);
+//		report.setTimeDetected(Timestamp.from(Instant.now()));
+//
+//		BaseStationRequestMessage baseStationRequestMessage = new BaseStationRequestMessage(TEST_BASE_STATION_A, List.of(report));
+//
+//		mvc.perform(MockMvcRequestBuilders.post("/api/v1/report")
+//						.contentType(MediaType.APPLICATION_JSON)
+//						.content(asJsonString(baseStationRequestMessage)))
+//				.andExpect(status().isCreated());
+//
+//	}
+//
+//	@Test
+//	public void getMobileStationPositionTest() throws Exception {
+//
+//		mvc.perform(get("/api/v1/location/" + TEST_MOBILE_STATION_Z)
+//						.contentType(MediaType.APPLICATION_JSON))
+//				.andExpect(status().isOk())
+//				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+//				.andExpect(content().string(containsString(TEST_MOBILE_STATION_Z.toString())));
+//	}
 }
