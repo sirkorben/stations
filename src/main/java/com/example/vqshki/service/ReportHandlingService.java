@@ -22,7 +22,6 @@ import static com.example.vqshki.utils.LocationDetermination.*;
 
 @Service
 public class ReportHandlingService {
-
     final Integer SCHEDULED_TIME_PERIOD = 10;
     final Integer COINCIDENCE_GAP = 7;
     private final ReportRepository reportRepository;
@@ -45,7 +44,7 @@ public class ReportHandlingService {
         return new Timestamp(cal.getTime().getTime());
     }
 
-    private static Timestamp timeNow() {
+    public static Timestamp timeNow() {
         return Timestamp.from(Instant.now());
     }
 
@@ -58,61 +57,66 @@ public class ReportHandlingService {
         if (mobileStationIdslist.isEmpty()) {
             return;
         }
-        handleReports(mobileStationIdslist);
-    }
-
-    private void handleReports(List<UUID> reportedMobileStationIds) {
-
-        reportedMobileStationIds.forEach(mobileStationId -> {
-            Timestamp latestTimeDetectedMinusCoincidenceGap = timeProvidedMinusGap(
-                    reportRepository.getLatestTimeDetectedByMobileStationId(mobileStationId), COINCIDENCE_GAP);
-
-
-            List<UUID> coincidenceBaseStationIds = reportRepository.getCoincidenceBaseStationIds(
-                    mobileStationId, latestTimeDetectedMinusCoincidenceGap, timeNow());
-
-
-            List<Report> coincidenceReportList = new ArrayList<>();
-            coincidenceBaseStationIds.forEach(baseStationId ->
-                    coincidenceReportList.add(reportRepository.getLatestReportByBsId(baseStationId, mobileStationId)));
-
-            if (coincidenceReportList.size() > 3) {
-                //TODO: how to get only three latest reports?
-                coincidenceReportList.sort(Comparator.comparing(Report::getTimeDetected).reversed());
-                coincidenceReportList.subList(3, coincidenceReportList.size()).clear();
-            }
-
-            switch (coincidenceReportList.size()) {
-                case 1 -> {
-                    Report report = coincidenceReportList.get(0);
-                    BaseStation baseStation = getBaseStationById(report);
-                    mobileStationRepository.save(
-                            detectedByOneReading(mobileStationId, new Reading(report, baseStation)));
-                }
-                case 2 -> {
-                    Report reportOne = coincidenceReportList.get(0);
-                    Report reportTwo = coincidenceReportList.get(1);
-                    mobileStationRepository.save(detectedByTwoBaseStations(
-                            mobileStationId,
-                            new Reading(reportOne, getBaseStationById(reportOne)),
-                            new Reading(reportTwo, getBaseStationById(reportTwo))));
-                }
-                case 3 -> {
-                    Report reportOne = coincidenceReportList.get(0);
-                    Report reportTwo = coincidenceReportList.get(1);
-                    Report reportThree = coincidenceReportList.get(2);
-                    mobileStationRepository.save(detectedByThreeBaseStations(
-                            mobileStationId,
-                            new Reading(reportOne, getBaseStationById(reportOne)),
-                            new Reading(reportTwo, getBaseStationById(reportTwo)),
-                            new Reading(reportThree, getBaseStationById(reportThree))));
-                }
-            }
+        mobileStationIdslist.forEach(mobileStationId -> {
+            List<Report> coincidenceReports = handleReports(mobileStationId);
+            mobileStationRepository.save(
+                    switchBetweenReportListSize(mobileStationId, coincidenceReports));
         });
     }
 
-    private MobileStation detectedByOneReading(UUID mobileStationId, Reading reading) {
+    public List<Report> handleReports(UUID reportedMobileStationId) {
+        List<Report> coincidenceReportList = new ArrayList<>();
 
+        Timestamp latestTimeDetectedMinusCoincidenceGap = timeProvidedMinusGap(
+                reportRepository.getLatestTimeDetectedByMobileStationId(reportedMobileStationId), COINCIDENCE_GAP);
+
+        List<UUID> coincidenceBaseStationIds = reportRepository.getCoincidenceBaseStationIds(
+                reportedMobileStationId, latestTimeDetectedMinusCoincidenceGap, timeNow());
+
+        coincidenceBaseStationIds.forEach(baseStationId ->
+                coincidenceReportList.add(reportRepository.getLatestReportByBsId(baseStationId, reportedMobileStationId)));
+
+        if (coincidenceReportList.size() > 3) {
+            coincidenceReportList.sort(Comparator.comparing(Report::getTimeDetected).reversed());
+            coincidenceReportList.subList(3, coincidenceReportList.size()).clear();
+        }
+        return coincidenceReportList;
+    }
+
+    public MobileStation switchBetweenReportListSize(UUID mobileStationId, List<Report> coincidenceReportList) {
+        switch (coincidenceReportList.size()) {
+            case 1 -> {
+                Report report = coincidenceReportList.get(0);
+                BaseStation baseStation = getBaseStationById(report);
+
+                return detectedByOneReading(mobileStationId, new Reading(report, baseStation));
+            }
+            case 2 -> {
+                Report reportOne = coincidenceReportList.get(0);
+                Report reportTwo = coincidenceReportList.get(1);
+
+                return detectedByTwoBaseStations(
+                        mobileStationId,
+                        new Reading(reportOne, getBaseStationById(reportOne)),
+                        new Reading(reportTwo, getBaseStationById(reportTwo)));
+            }
+            case 3 -> {
+                Report reportOne = coincidenceReportList.get(0);
+                Report reportTwo = coincidenceReportList.get(1);
+                Report reportThree = coincidenceReportList.get(2);
+
+                return detectedByThreeBaseStations(
+                        mobileStationId,
+                        new Reading(reportOne, getBaseStationById(reportOne)),
+                        new Reading(reportTwo, getBaseStationById(reportTwo)),
+                        new Reading(reportThree, getBaseStationById(reportThree)));
+            }
+            default -> throw new IllegalStateException(
+                    "Unexpected value of coincidenceReportList: " + coincidenceReportList.size());
+        }
+    }
+
+    private MobileStation detectedByOneReading(UUID mobileStationId, Reading reading) {
         if (reading == null) {
             throw new IllegalArgumentException("reading cannot be null");
         }
@@ -129,7 +133,6 @@ public class ReportHandlingService {
     }
 
     private MobileStation detectedByTwoBaseStations(UUID mobileStationId, Reading firstReading, Reading secondReading) {
-
         if (firstReading == null || secondReading == null) {
             throw new IllegalArgumentException("reading cannot be null");
         }
@@ -155,7 +158,6 @@ public class ReportHandlingService {
     }
 
     private MobileStation detectedByThreeBaseStations(UUID mobileStationId, Reading firstReading, Reading secondReading, Reading thirdReading) {
-
         if (firstReading == null || secondReading == null || thirdReading == null) {
             throw new IllegalArgumentException("reading cannot be null");
         }

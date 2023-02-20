@@ -15,8 +15,8 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 
-import static com.example.vqshki.constants.TestConstants.TEST_BASE_STATION_A;
-import static com.example.vqshki.constants.TestConstants.TEST_MOBILE_STATION_Z;
+import static com.example.vqshki.constants.TestConstants.TEST_BASE_STATION_A_ID;
+import static com.example.vqshki.constants.TestConstants.TEST_MOBILE_STATION_Z_ID;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -41,11 +41,11 @@ class VqshkiApplicationTests {
 	public void createReportSuccess() throws Exception {
 
 		Report report = new Report();
-		report.setMobileStationId(TEST_MOBILE_STATION_Z);
+		report.setMobileStationId(TEST_MOBILE_STATION_Z_ID);
 		report.setDistance(10);
 		report.setTimeDetected(Timestamp.from(Instant.now()));
 
-		BaseStationRequestMessage baseStationRequestMessage = new BaseStationRequestMessage(TEST_BASE_STATION_A, List.of(report));
+		BaseStationRequestMessage baseStationRequestMessage = new BaseStationRequestMessage(TEST_BASE_STATION_A_ID, List.of(report));
 
 		mvc.perform(MockMvcRequestBuilders.post("/api/v1/report")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -57,10 +57,10 @@ class VqshkiApplicationTests {
 	@Test
 	public void getMobileStationPositionTest() throws Exception {
 
-		mvc.perform(get("/api/v1/location/" + TEST_MOBILE_STATION_Z)
+		mvc.perform(get("/api/v1/location/" + TEST_MOBILE_STATION_Z_ID)
 						.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk())
 				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-				.andExpect(content().string(containsString(TEST_MOBILE_STATION_Z.toString())));
+				.andExpect(content().string(containsString(TEST_MOBILE_STATION_Z_ID.toString())));
 	}
 }
