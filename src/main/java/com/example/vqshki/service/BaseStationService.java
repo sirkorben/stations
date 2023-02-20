@@ -19,13 +19,17 @@ public class BaseStationService {
         this.reportRepository = reportRepository;
     }
 
-    public void saveReports(BaseStationRequestMessage report) {
-        UUID bsId = report.getBaseStationId();
+    public List<Report> saveReports(BaseStationRequestMessage baseStationRequestMessage) {
+        return reportRepository.saveAll(modifyReports(baseStationRequestMessage));
+    }
+
+    private List<Report> modifyReports(BaseStationRequestMessage bsRequestMsg) {
+        UUID bsId = bsRequestMsg.getBaseStationId();
         List<Report> reports = new ArrayList<>();
-        report.getReports().forEach(rep -> {
+        bsRequestMsg.getReports().forEach(rep -> {
             rep.setBaseStationId(bsId);
             reports.add(rep);
         });
-        reportRepository.saveAll(reports);
+        return reports;
     }
 }

@@ -1,6 +1,5 @@
 package com.example.vqshki.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,18 +15,23 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-//@JsonInclude(JsonInclude.Include.NON_NULL) // TODO: to verify how relevant it is
 public class MobileStation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @JsonIgnore
+    @Column(name = "id")
     private Long id;
+    @Column(name = "mobile_station_id")
     private UUID mobileStationId;
+    @Column(name = "last_known_x")
     private Double lastKnownX;
+    @Column(name = "last_known_y")
     private Double lastKnownY;
+    @Column(name = "error_radius")
     private Double errorRadius;
+    @Column(name = "error_code")
     private Integer errorCode;
+    @Column(name = "error_msg")
     private String errorMsg;
-    @JsonIgnore
+    @Column(name = "timestamp")
     private Timestamp timestamp;
 }
