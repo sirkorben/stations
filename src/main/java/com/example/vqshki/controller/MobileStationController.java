@@ -4,7 +4,6 @@ import com.example.vqshki.dto.MobileStationDTO;
 import com.example.vqshki.mappers.MobileStationMapper;
 import com.example.vqshki.models.MobileStation;
 import com.example.vqshki.service.MobileStationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,7 +17,7 @@ import java.util.UUID;
 @RequestMapping(path = "/api/v1/location")
 public class MobileStationController {
     private final MobileStationService mobileStationService;
-    private MobileStationMapper mobileStationMapper;
+    private final MobileStationMapper mobileStationMapper;
 
     public MobileStationController(MobileStationService mobileStationService, MobileStationMapper mobileStationMapper) {
         this.mobileStationMapper = mobileStationMapper;

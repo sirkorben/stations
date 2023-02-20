@@ -18,7 +18,7 @@ import java.util.Optional;
 @RequestMapping(path = "api/v1/report")
 public class BaseStationController {
     private final BaseStationService baseStationService;
-    private ReportMapper reportMapper;
+    private final ReportMapper reportMapper;
 
     public BaseStationController(BaseStationService baseStationService, ReportMapper reportMapper) {
         this.baseStationService = baseStationService;

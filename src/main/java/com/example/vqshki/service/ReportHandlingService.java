@@ -50,7 +50,7 @@ public class ReportHandlingService {
     }
 
     @Scheduled(fixedRate = 10000)
-    public void timeout() {
+    public void scheduledWork() {
         Timestamp timeToFindReportsInPast = timeProvidedMinusGap(
                 Timestamp.from(Instant.now()), SCHEDULED_TIME_PERIOD);
         List<UUID> mobileStationIdslist = reportRepository.getLatestReportedMobileStationIdsBetweenTime(
